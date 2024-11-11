@@ -1,5 +1,6 @@
 """
-This script processes 2D k-space data, typically used in MRI image reconstruction, by applying zero-filling to improve the resolution and performing a 2D Fast Fourier Transform (FFT) to shift the data from k-space to image space. 
+This script processes 2D k-space data, typically used in MRI image reconstruction, by applying zero-filling to improve the resolution and 
+performing a 2D Fast Fourier Transform (FFT) to shift the data from k-space to image space. 
 
 The steps include:
 1. Zero-filling the data for interpolation and increased resolution.
