@@ -100,19 +100,15 @@ def calculate_magnitude_image(data):
 def calculate_phase_image(data):
     """
     Calculates the phase image from a complex data array.
-
-
+    
     Args:
         data (array): Complex data array representing the image.
-
-
+        
     Returns:
         array: Array containing the phases of the complex components of each element of the input array.
-
-
     """
+    
     phase_data = np.angle(data)
-
 
     return phase_data
 
