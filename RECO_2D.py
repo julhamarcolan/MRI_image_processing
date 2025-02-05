@@ -19,25 +19,25 @@ import matplotlib.pyplot as plt
 
 # ------------------------------------------------------------------------------------------------
 # Functions
-def zero_fill_2Ddata(offsetData, dim):
+def zero_fill_2Ddata(Data, dim):
     """
     Zero-fills the k-space to reconstruct the data with increased resolution and interpolation with correct aspect ratio.
     
     Parameters:
-        offsetData (ndarray): Input data in k-space.
+        Data (ndarray): Input data in k-space.
         dim (tuple): Tuple representing the desired dimention of the zero fill data ..
 
     Returns:
         ndarray: Zero-filled data.
     """
     zeroFill = 2
-    offsetData_dim = offsetData.shape  
+    Data_dim = Data.shape  
 
-    dim0Padding =  max(0, int((dim[0] - offsetData_dim[0]) / zeroFill))
-    dim1Padding =  max(0, int((dim[1] - offsetData_dim[1]) / zeroFill))
+    dim0Padding =  max(0, int((dim[0] - Data_dim[0]) / zeroFill))
+    dim1Padding =  max(0, int((dim[1] - Data_dim[1]) / zeroFill))
 
     # Pad the data with zeros
-    zeroFillData = np.pad(offsetData, [(dim0Padding, dim0Padding), (dim1Padding, dim1Padding)], mode='constant')
+    zeroFillData = np.pad(Data, [(dim0Padding, dim0Padding), (dim1Padding, dim1Padding)], mode='constant')
 
     return zeroFillData
 
