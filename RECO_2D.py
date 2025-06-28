@@ -18,28 +18,48 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # ------------------------------------------------------------------------------------------------
-# Functions
-def zero_fill_2Ddata(Data, dim):
+def zero_fill_2Ddata(kspace_data, dim):
     """
-    Zero-fills the k-space to reconstruct the data with increased resolution and interpolation with correct aspect ratio.
-    
-    Parameters:
-        Data (ndarray): Input data in k-space.
-        dim (tuple): Tuple representing the desired dimention of the zero fill data ..
+        Applies a trapezoidal weighting function to the input k-space data and then zero-fills it
+        to match the desired output dimensions.
 
-    Returns:
-        ndarray: Zero-filled data.
+        Args:
+            kspace_data (ndarray): Input data in k-space.
+            dim (tuple): Tuple representing the desired dimension of the zero-filled data.
+
+        Returns:
+            ndarray: Weighted and zero-filled k-space data.
     """
     zeroFill = 2
-    Data_dim = Data.shape  
+    data_shape = kspace_data.shape
+    rows, cols = data_shape
 
-    dim0Padding =  max(0, int((dim[0] - Data_dim[0]) / zeroFill))
-    dim1Padding =  max(0, int((dim[1] - Data_dim[1]) / zeroFill))
+    # --- Create 1D trapezoidal window for rows and columns ---
+    def create_trapezoid(size):
+        ramp = np.linspace(0, 1, 11)
+        flat = np.ones(size - 22)
+        if size <= 22:
+            return np.ones(size)  
+        taper = np.concatenate([ramp, flat, ramp[::-1]])
+        return taper
 
-    # Pad the data with zeros
-    zeroFillData = np.pad(Data, [(dim0Padding, dim0Padding), (dim1Padding, dim1Padding)], mode='constant')
+    row_trap = create_trapezoid(rows)
+    col_trap = create_trapezoid(cols)
 
-    return zeroFillData
+    # --- Create 2D trapezoidal window ---
+    trapezoid_2d = np.outer(row_trap, col_trap)
+
+    # --- Apply trapezoid to k-space data ---
+    weighted_kspace = kspace_data * trapezoid_2d
+
+    # --- Compute padding amounts ---
+    dim0Padding = max(0, int((dim[0] - rows) / zeroFill))
+    dim1Padding = max(0, int((dim[1] - cols) / zeroFill))
+
+    # --- Apply zero-padding ---
+    zero_filled_data = np.pad(weighted_kspace, [(dim0Padding, dim0Padding), (dim1Padding, dim1Padding)], mode='constant')
+
+    return zero_filled_data
 
 def apply_FFT_2D(data):
     """
@@ -52,7 +72,7 @@ def apply_FFT_2D(data):
     4. Shifts the transformed data back to the original position
 
     Args:
-
+        
         data (array_like): Input data to which the FFT will be applied. Should be a 2D array.
 
     Returns:
@@ -61,16 +81,16 @@ def apply_FFT_2D(data):
 
     """
 
-    # Shift the data to center low-frequency components
+    # --- Shift the data to center low-frequency components ---
     shifted_data = np.fft.fftshift(data, axes=(0, 1))
 
-    # Perform FFT along the first axis (axis 0)
+    # --- Perform FFT along the first axis (axis 0) ---
     transf_data = np.fft.fft(shifted_data, axis=0)
 
-    # Perform FFT along the second axis (axis 1)
+    # --- Perform FFT along the second axis (axis 1) ---
     transf_data = np.fft.fft(transf_data, axis=1)
 
-    # Shift the transformed data back to the original position
+    # --- Shift the transformed data back to the original position ---
     transf_data = np.fft.ifftshift(transf_data, axes=(0, 1))
 
     return transf_data
@@ -89,10 +109,10 @@ def calculate_magnitude_image(data):
     Returns:
         numpy.ndarray: Magnitude image computed from the input data.
     """
-    # Compute the magnitude image
+    # --- Compute the magnitude image ---
     mag_data = np.abs(data)
 
-    # Normalize the magnitude data
+    # --- Normalize the magnitude data ---
     mag_data /= np.max(mag_data)
 
     return mag_data
@@ -115,24 +135,24 @@ def calculate_phase_image(data):
 
 
 try:
-    #read the data 
+    # --- read the data ---
     
     data = np.load('data.npy')
 
-    #zero fill 
-    #zero_fill_data = zero_fill_2Ddata(data_background, [1024,1024])
+    # --- zero filling --- 
+    zero_fill_data = zero_fill_2Ddata(data, [1024,1024])
 
-    # calculating the FFT 
-    #zero_fill_fft = apply_FFT_2D(zero_fill_data)
-    data_fft = apply_FFT_2D(data)
+    # --- calculating the FFT ---
+    zero_fill_fft = apply_FFT_2D(zero_fill_data)
+    #data_fft = apply_FFT_2D(data)
 
 
-    #calculate the magnitude image 
-    data_mag = calculate_magnitude_image(data_fft)
+    # --- calculate the magnitude image ---
+    #data_mag = calculate_magnitude_image(data_fft)
+    data_mag = calculate_magnitude_image(zero_fill_fft)
 
     plt.figure(figsize=(10,6))
     plt.imshow(np.abs(data_mag), cmap='gray')
-    plt.title("Plane")
     plt.savefig("file_name.png")
     plt.show()
 

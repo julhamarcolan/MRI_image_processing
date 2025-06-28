@@ -213,27 +213,48 @@ def apply_FFT_2D(data):
 
     return transf_data
 
-def zero_fill_2Ddata(offsetData, dim):
+def zero_fill_2Ddata(kspace_data, dim):
     """
-    Zero-fills the k-space to reconstruct the data with increased resolution and interpolation with correct aspect ratio.
-    
-    Parameters:
-        offsetData (ndarray): Input data in k-space.
-        dim (tuple): Tuple representing the desired dimention of the zero fill data ..
+        Applies a trapezoidal weighting function to the input k-space data and then zero-fills it
+        to match the desired output dimensions.
 
-    Returns:
-        ndarray: Zero-filled data.
+        Args:
+            kspace_data (ndarray): Input data in k-space.
+            dim (tuple): Tuple representing the desired dimension of the zero-filled data.
+
+        Returns:
+            ndarray: Weighted and zero-filled k-space data.
     """
     zeroFill = 2
-    offsetData_dim = offsetData.shape  
+    data_shape = kspace_data.shape
+    rows, cols = data_shape
 
-    dim0Padding =  max(0, int((dim[0] - offsetData_dim[0]) / zeroFill))
-    dim1Padding =  max(0, int((dim[1] - offsetData_dim[1]) / zeroFill))
+    # --- Create 1D trapezoidal window for rows and columns ---
+    def create_trapezoid(size):
+        ramp = np.linspace(0, 1, 11)
+        flat = np.ones(size - 22)
+        if size <= 22:
+            return np.ones(size)  
+        taper = np.concatenate([ramp, flat, ramp[::-1]])
+        return taper
 
-    # Pad the data with zeros
-    zeroFillData = np.pad(offsetData, [(dim0Padding, dim0Padding), (dim1Padding, dim1Padding)], mode='constant')
+    row_trap = create_trapezoid(rows)
+    col_trap = create_trapezoid(cols)
 
-    return zeroFillData
+    # --- Create 2D trapezoidal window ---
+    trapezoid_2d = np.outer(row_trap, col_trap)
+
+    # --- Apply trapezoid to k-space data ---
+    weighted_kspace = kspace_data * trapezoid_2d
+
+    # --- Compute padding amounts ---
+    dim0Padding = max(0, int((dim[0] - rows) / zeroFill))
+    dim1Padding = max(0, int((dim[1] - cols) / zeroFill))
+
+    # --- Apply zero-padding ---
+    zero_filled_data = np.pad(weighted_kspace, [(dim0Padding, dim0Padding), (dim1Padding, dim1Padding)], mode='constant')
+
+    return zero_filled_data
 
 def calculate_magnitude_image(data):
     """
@@ -274,7 +295,7 @@ try:
     #calculate the SNR 
     snr, snr_db = background_noise(zero_fill_mag, 0.1, 250)
 
-    print(f"snr (background_noise): {snr}")
+    print(f"SNR (background_noise): {snr}")
     print(f"snr_db (background_noise): {snr_db}")
 except FileNotFoundError:
     print("Error: 'data_background.npy' file not found.")
