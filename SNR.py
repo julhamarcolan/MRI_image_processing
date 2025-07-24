@@ -229,7 +229,7 @@ def zero_fill_2Ddata(kspace_data, dim):
     data_shape = kspace_data.shape
     rows, cols = data_shape
 
-    # --- Create 1D trapezoidal window for rows and columns ---
+    # Create 1D trapezoidal window for rows and columns 
     def create_trapezoid(size):
         ramp = np.linspace(0, 1, 11)
         flat = np.ones(size - 22)
@@ -241,17 +241,17 @@ def zero_fill_2Ddata(kspace_data, dim):
     row_trap = create_trapezoid(rows)
     col_trap = create_trapezoid(cols)
 
-    # --- Create 2D trapezoidal window ---
+    # Create 2D trapezoidal window 
     trapezoid_2d = np.outer(row_trap, col_trap)
 
-    # --- Apply trapezoid to k-space data ---
+    # Apply trapezoid to k-space data 
     weighted_kspace = kspace_data * trapezoid_2d
 
-    # --- Compute padding amounts ---
+    # Compute padding amounts 
     dim0Padding = max(0, int((dim[0] - rows) / zeroFill))
     dim1Padding = max(0, int((dim[1] - cols) / zeroFill))
 
-    # --- Apply zero-padding ---
+    #  Apply zero-padding 
     zero_filled_data = np.pad(weighted_kspace, [(dim0Padding, dim0Padding), (dim1Padding, dim1Padding)], mode='constant')
 
     return zero_filled_data
